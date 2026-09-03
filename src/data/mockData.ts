@@ -103,6 +103,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
 export const NUTRIENTS_DATA: Record<string, Nutrient> = {
   'vitamin-d': {
     id: 'vitamin-d',
+    routineDefault: '1000 IU · morning',
     symbol: 'D',
     name: 'Vitamin D',
     tagline: 'Bone & immune',
@@ -127,12 +128,6 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
       targetLabel: 'Adults 19-30',
       upperLimit: '4,000 IU'
     },
-    routineSuggestions: [
-      { name: 'Sunlight', portion: '15 min midday', icon: 'sun' },
-      { name: 'Salmon', portion: '1 fillet ≈ full day', icon: 'fish' },
-      { name: 'Eggs', portion: '2 eggs ≈ 15%', icon: 'egg' },
-      { name: 'Milk', portion: '1 cup ≈ 20%', icon: 'water_drop' }
-    ],
     supplement: {
       title: 'Supplement option',
       dosage: 'Vitamin D3, 600–1,000 IU/day',
@@ -152,6 +147,7 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
   },
   'vitamin-b12': {
     id: 'vitamin-b12',
+    routineDefault: '500 mcg · sublingual',
     symbol: 'B12',
     name: 'Vitamin B12',
     tagline: 'Energy support',
@@ -177,12 +173,6 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
       targetLabel: 'Adults 19-30',
       upperLimit: 'No established limit'
     },
-    routineSuggestions: [
-      { name: 'Eggs', portion: '2 eggs ≈ 25%', icon: 'egg' },
-      { name: 'Fortified cereal', portion: '1 bowl ≈ 50%', icon: 'grain' },
-      { name: 'Nutritional yeast', portion: '1 tbsp ≈ full day', icon: 'grain' },
-      { name: 'Salmon', portion: '1 fillet ≈ full day', icon: 'fish' }
-    ],
     supplement: {
       title: 'Supplement option',
       dosage: 'Vitamin B12 (cyanocobalamin), 250–500 mcg/day or 1,000 mcg 2x/week',
@@ -202,6 +192,7 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
   },
   'vitamin-c': {
     id: 'vitamin-c',
+    routineDefault: '500 mg · with lunch',
     symbol: 'C',
     name: 'Vitamin C',
     tagline: 'Antioxidant',
@@ -227,12 +218,6 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
       targetLabel: 'Adults 19-30',
       upperLimit: '2,000 mg'
     },
-    routineSuggestions: [
-      { name: 'Bell pepper', portion: '1/2 pepper ≈ full day', icon: 'eco' },
-      { name: 'Orange', portion: '1 orange ≈ full day', icon: 'apple' },
-      { name: 'Strawberries', portion: '1 cup ≈ full day', icon: 'apple' },
-      { name: 'Broccoli', portion: '1 cup ≈ 90%', icon: 'eco' }
-    ],
     supplement: {
       title: 'Supplement option',
       dosage: 'Vitamin C (ascorbic acid), 250–500 mg/day with meals',
@@ -251,6 +236,9 @@ export const NUTRIENTS_DATA: Record<string, Nutrient> = {
     isFlaggedLow: true
   }
 };
+
+/** Nutrients the rule-based assessment flagged. Every results screen iterates this list. */
+export const FLAGGED_NUTRIENTS: Nutrient[] = Object.values(NUTRIENTS_DATA).filter((n) => n.isFlaggedLow);
 
 export const INITIAL_ROUTINE_ITEMS: RoutineItem[] = [
   {

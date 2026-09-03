@@ -1,17 +1,20 @@
 import React from 'react';
 import { X, Sparkles, CheckCircle2 } from 'lucide-react';
 
-interface NutrientModalProps {
+interface InfoModalProps {
   isOpen: boolean;
   title: string;
   description: string;
+  /** Bulleted takeaways shown in a highlighted box. */
   keyPoints?: string[];
   onClose: () => void;
+  /** Runs before closing when the action button is pressed. */
   onAction?: () => void;
   actionText?: string;
 }
 
-export const NutrientModal: React.FC<NutrientModalProps> = ({
+/** Dark bottom-sheet for reading an article or an explanation. One action button that closes it. */
+export const InfoModal: React.FC<InfoModalProps> = ({
   isOpen,
   title,
   description,
@@ -23,7 +26,10 @@ export const NutrientModal: React.FC<NutrientModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-[393px] bg-slate-900 text-white rounded-t-2xl sm:rounded-2xl p-6 border-t sm:border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-8 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -37,15 +43,14 @@ export const NutrientModal: React.FC<NutrientModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-[14px] text-slate-300 leading-relaxed mb-4">
-          {description}
-        </p>
+        <p className="text-[14px] text-slate-300 leading-relaxed mb-4">{description}</p>
 
         {keyPoints && keyPoints.length > 0 && (
           <div className="space-y-2 mb-5 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
@@ -58,26 +63,15 @@ export const NutrientModal: React.FC<NutrientModalProps> = ({
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          {onAction && actionText !== 'Understood' ? (
-            <button
-              onClick={() => {
-                onAction();
-                onClose();
-              }}
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
-            >
-              {actionText}
-            </button>
-          ) : (
-            <button
-              onClick={onClose}
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
-            >
-              Understood
-            </button>
-          )}
-        </div>
+        <button
+          onClick={() => {
+            onAction?.();
+            onClose();
+          }}
+          className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all active:scale-[0.98]"
+        >
+          {actionText}
+        </button>
       </div>
     </div>
   );

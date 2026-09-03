@@ -10,6 +10,9 @@ export type AppScreen =
   | 'profile'
   | 'how-it-works';
 
+/** questionId -> optionId (single choice) | optionId[] (multi choice). */
+export type QuizAnswers = Record<string, string | string[]>;
+
 export interface QuizOption {
   id: string;
   label: string;
@@ -37,8 +40,8 @@ export interface QuizQuestion {
 export interface FoodSource {
   name: string;
   amount: string;
+  /** Key into FoodIcon's map (sun, fish, egg, water_drop, grain, eco, apple, ...). */
   icon: string;
-  image?: string;
 }
 
 export interface SupplementOption {
@@ -60,17 +63,15 @@ export interface Nutrient {
   detailedBio: string;
   keyBenefits: string[];
   whatItDoes: string;
+  /** Food/habit sources with real-world portions. Also drives the "Ways to get more" list in the results flow. */
   whereToFindIt: FoodSource[];
   howMuchYouNeed: {
     target: string;
     targetLabel: string;
     upperLimit: string;
   };
-  routineSuggestions: Array<{
-    name: string;
-    portion: string;
-    icon: string;
-  }>;
+  /** Detail line used when this nutrient is added to the routine as a supplement, e.g. "1000 IU · morning". */
+  routineDefault: string;
   supplement: SupplementOption;
   testimonial: {
     quote: string;
@@ -108,6 +109,6 @@ export interface UserProfile {
   email: string;
   campusYear: string;
   dietPreference: string;
-  answers: Record<string, any>;
+  answers: QuizAnswers;
   hasCompletedQuiz: boolean;
 }
