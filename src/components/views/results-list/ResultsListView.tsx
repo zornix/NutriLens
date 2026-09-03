@@ -11,7 +11,9 @@ import { NutrientResultCard } from './NutrientResultCard';
 
 interface ResultsListViewProps {
   routineItems: RoutineItem[];
-  onAddRoutineItem: (item: RoutineItem) => void;
+  /** Returns false when a same-named item already exists. */
+  onAddRoutineItem: (item: RoutineItem) => boolean;
+  onRemoveRoutineItem: (itemId: string) => void;
   onAddAllToRoutine: () => void;
   onOpenNutrientDetail: (nutrientId: string) => void;
   onGoToHome: () => void;
@@ -24,11 +26,13 @@ interface ResultsListViewProps {
 export const ResultsListView: React.FC<ResultsListViewProps> = ({
   routineItems,
   onAddRoutineItem,
+  onRemoveRoutineItem,
   onAddAllToRoutine,
   onOpenNutrientDetail,
   onGoToHome
 }) => {
   const [toast, setToast] = useState<string | null>(null);
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const isInRoutine = (nutrientId: string) => routineItems.some((r) => r.nutrientId === nutrientId);
 
   return (
@@ -36,8 +40,9 @@ export const ResultsListView: React.FC<ResultsListViewProps> = ({
       <header className="flex justify-between items-center w-full py-2 mb-2">
         <span className="text-[22px] font-bold text-slate-900 tracking-tight">NutriLens</span>
         <button
+          type="button"
           aria-label="Notifications"
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-600 border border-slate-200/60"
+          className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-600 border border-slate-200/60"
         >
           <Bell className="w-4 h-4" />
         </button>
@@ -66,8 +71,14 @@ export const ResultsListView: React.FC<ResultsListViewProps> = ({
             isAdded={isInRoutine(n.id)}
             onOpen={() => onOpenNutrientDetail(n.id)}
             onAdd={() => {
-              onAddRoutineItem(nutrientToRoutineItem(n));
-              setToast(`${n.name} added to your routine`);
+              const item = nutrientToRoutineItem(n);
+              if (onAddRoutineItem(item)) {
+                setLastAddedId(item.id);
+                setToast(`${n.name} added to your routine`);
+              } else {
+                setLastAddedId(null);
+                setToast(`${n.name} is already in your routine`);
+              }
             }}
           />
         ))}
@@ -77,6 +88,7 @@ export const ResultsListView: React.FC<ResultsListViewProps> = ({
         <Button
           onClick={() => {
             onAddAllToRoutine();
+            setLastAddedId(null);
             setToast(`All ${FLAGGED_NUTRIENTS.length} nutrients added to routine`);
           }}
         >
@@ -84,19 +96,32 @@ export const ResultsListView: React.FC<ResultsListViewProps> = ({
           <Plus className="w-4 h-4" />
         </Button>
         <button
+          type="button"
           onClick={onGoToHome}
-          className="w-full py-2 text-slate-600 hover:text-slate-900 font-medium text-[14px] transition-colors flex items-center justify-center gap-1"
+          className="w-full min-h-11 py-2 text-slate-600 hover:text-slate-900 font-medium text-[14px] transition-colors flex items-center justify-center gap-1"
         >
           <span>Go to home</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </section>
 
-      <footer className="text-center pb-6 text-[12px] text-slate-400">
+      <footer className="text-center pb-6 text-[12px] text-slate-500">
         <p>Talk to a doctor or Student Health for anything real.</p>
       </footer>
 
-      <Toast message={toast} />
+      <Toast
+        message={toast}
+        onDismiss={() => setToast(null)}
+        onUndo={
+          lastAddedId
+            ? () => {
+                onRemoveRoutineItem(lastAddedId);
+                setLastAddedId(null);
+                setToast('Removed from your routine');
+              }
+            : undefined
+        }
+      />
     </PageShell>
   );
 };

@@ -16,13 +16,14 @@ interface MultiChoiceGridProps {
 /** Two-column checkbox grid with food icons, optional "I'm not sure" row and insight callout. */
 export const MultiChoiceGrid: React.FC<MultiChoiceGridProps> = ({ question, selectedIds, onToggle, onNotSure }) => (
   <div className="space-y-3 mb-4">
-    <div className="grid grid-cols-2 gap-2.5" role="group">
+    <div className="grid grid-cols-2 gap-2.5" role="group" aria-label={question.question}>
       {question.options.map((opt) => {
         const isSelected = selectedIds.includes(opt.id);
         return (
           <button
             key={opt.id}
             type="button"
+            aria-pressed={isSelected}
             onClick={() => onToggle(opt.id)}
             className={`group relative flex items-center justify-between min-h-[64px] p-3 text-left rounded-xl transition-all duration-150 active:scale-[0.98] ${
               isSelected
@@ -45,7 +46,7 @@ export const MultiChoiceGrid: React.FC<MultiChoiceGridProps> = ({ question, sele
                 isSelected ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-white group-hover:border-slate-400'
               }`}
             >
-              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden />}
             </span>
           </button>
         );
@@ -55,6 +56,7 @@ export const MultiChoiceGrid: React.FC<MultiChoiceGridProps> = ({ question, sele
     {question.hasUnsureOption && (
       <button
         type="button"
+        aria-pressed={selectedIds.includes(NOT_SURE)}
         onClick={onNotSure}
         className={`w-full min-h-[48px] flex items-center justify-between px-4 py-2.5 rounded-xl border border-dashed transition-colors active:scale-[0.99] ${
           selectedIds.includes(NOT_SURE)
@@ -66,7 +68,7 @@ export const MultiChoiceGrid: React.FC<MultiChoiceGridProps> = ({ question, sele
           <HelpCircle className="w-4 h-4 text-slate-500" />
           <span className="text-[14px] font-medium">I'm not sure</span>
         </div>
-        <ArrowRight className="w-4 h-4 text-slate-400" />
+        <ArrowRight className="w-4 h-4 text-slate-500" />
       </button>
     )}
 

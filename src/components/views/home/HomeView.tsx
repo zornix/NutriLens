@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, ClipboardList } from 'lucide-react';
 import { RoutineItem } from '../../../types';
 import { NUTRIENTS_DATA, FLAGGED_NUTRIENTS, EDUCATIONAL_ARTICLES } from '../../../data/mockData';
 import { PageShell } from '../../common/PageShell';
@@ -12,23 +12,28 @@ import { LearnMoreGrid } from './LearnMoreGrid';
 
 interface HomeViewProps {
   userName: string;
+  /** Results are only shown once the quiz has been taken; guests get a prompt instead (H1, H2). */
+  hasCompletedQuiz: boolean;
   routineItems: RoutineItem[];
   onToggleRoutineItem: (itemId: string) => void;
   onOpenAssessment: () => void;
+  onStartQuiz: () => void;
   onOpenNutrientDetail: (nutrientId: string) => void;
   onOpenArticle: (articleId: string) => void;
   onOpenProfile: () => void;
 }
 
 /**
- * Home tab. Elements top to bottom: greeting header with avatar, mascot hero, gap banner,
- * NutrientCarousel, "Check my nutrition" CTA, TodayRoutineCard, LearnMoreGrid.
+ * Home tab. Elements top to bottom: greeting header with avatar, mascot hero, results banner (or quiz prompt),
+ * NutrientCarousel, one quiz CTA, TodayRoutineCard, LearnMoreGrid.
  */
 export const HomeView: React.FC<HomeViewProps> = ({
   userName,
+  hasCompletedQuiz,
   routineItems,
   onToggleRoutineItem,
   onOpenAssessment,
+  onStartQuiz,
   onOpenNutrientDetail,
   onOpenArticle,
   onOpenProfile
@@ -39,13 +44,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
       title={`Good morning, ${userName}`}
       right={
         <button
+          type="button"
           onClick={onOpenProfile}
-          aria-label="Profile"
-          className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-xs active:scale-95 transition-transform"
+          aria-label="Open profile"
+          className="w-11 h-11 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-xs active:scale-95 transition-transform"
         >
-          <div className="w-7 h-7 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[13px]">
+          <span
+            aria-hidden
+            className="w-7 h-7 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[13px]"
+          >
             {userName.charAt(0)}
-          </div>
+          </span>
         </button>
       }
     />
@@ -57,30 +66,43 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
     </section>
 
-    {/* Gap banner */}
+    {/* Results banner or quiz prompt */}
     <section className="mb-4">
-      <button
-        onClick={onOpenAssessment}
-        className="w-full bg-indigo-50/80 hover:bg-indigo-100/80 text-left p-3.5 rounded-xl flex items-center justify-between shadow-xs active:scale-[0.99] transition-all border border-indigo-100"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
-            <Sparkles className="w-4 h-4 fill-current" />
-          </div>
-          <span className="text-[14px] font-bold text-slate-900">
-            {FLAGGED_NUTRIENTS.length} nutrients worth a closer look
+      {hasCompletedQuiz ? (
+        <button
+          type="button"
+          onClick={onOpenAssessment}
+          className="w-full min-h-[52px] bg-indigo-50/80 hover:bg-indigo-100/80 text-left p-3.5 rounded-xl flex items-center justify-between shadow-xs active:scale-[0.99] transition-all border border-indigo-100"
+        >
+          <span className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+              <Sparkles className="w-4 h-4 fill-current" aria-hidden />
+            </span>
+            <span className="text-[14px] font-bold text-slate-900">
+              {FLAGGED_NUTRIENTS.length} nutrients worth a closer look
+            </span>
           </span>
+          <ArrowRight className="w-4 h-4 text-slate-600" aria-hidden />
+        </button>
+      ) : (
+        <div className="bg-white p-3.5 rounded-xl flex items-center gap-3 shadow-xs border border-slate-200">
+          <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
+            <ClipboardList className="w-4 h-4" aria-hidden />
+          </span>
+          <p className="text-[13px] text-slate-600">
+            <span className="font-bold text-slate-900">No assessment yet.</span> Take the 60-second quiz to see which
+            nutrients are worth a closer look.
+          </p>
         </div>
-        <ArrowRight className="w-4 h-4 text-slate-600" />
-      </button>
+      )}
     </section>
 
     <NutrientCarousel nutrients={Object.values(NUTRIENTS_DATA)} onOpen={onOpenNutrientDetail} />
 
     <section className="mb-5">
-      <Button onClick={onOpenAssessment}>
-        <span>Check my nutrition</span>
-        <ArrowRight className="w-4 h-4" />
+      <Button onClick={onStartQuiz}>
+        <span>{hasCompletedQuiz ? 'Retake the quiz' : 'Check my nutrition'}</span>
+        <ArrowRight className="w-4 h-4" aria-hidden />
       </Button>
     </section>
 

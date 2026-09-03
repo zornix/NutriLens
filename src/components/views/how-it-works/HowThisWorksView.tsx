@@ -83,7 +83,7 @@ export const HowThisWorksView: React.FC<HowThisWorksViewProps> = ({ onBack, onSt
       </section>
 
       <div className="flex items-center justify-center gap-2 text-[12px] text-slate-500 pt-1">
-        <ShieldCheck className="w-4 h-4 text-slate-400" />
+        <ShieldCheck className="w-4 h-4 text-slate-500" />
         <span>100% client-side privacy · No answers leave your browser</span>
       </div>
 

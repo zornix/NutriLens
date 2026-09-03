@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { X, Sparkles, CheckCircle2 } from 'lucide-react';
+import { useEscapeKey } from '../../lib/useEscapeKey';
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -13,7 +14,10 @@ interface InfoModalProps {
   actionText?: string;
 }
 
-/** Dark bottom-sheet for reading an article or an explanation. One action button that closes it. */
+/**
+ * Dark bottom-sheet for reading an article or an explanation.
+ * Accessible dialog: labelled by its title, closes on Escape or backdrop tap, focus moves to Close on open (H3).
+ */
 export const InfoModal: React.FC<InfoModalProps> = ({
   isOpen,
   title,
@@ -23,6 +27,13 @@ export const InfoModal: React.FC<InfoModalProps> = ({
   onAction,
   actionText = 'Understood'
 }) => {
+  const titleId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEscapeKey(onClose, isOpen);
+  useEffect(() => {
+    if (isOpen) closeRef.current?.focus();
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -31,20 +42,27 @@ export const InfoModal: React.FC<InfoModalProps> = ({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="w-full max-w-[393px] bg-slate-900 text-white rounded-t-2xl sm:rounded-2xl p-6 border-t sm:border border-slate-800 shadow-2xl animate-in slide-in-from-bottom-8 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4" />
+        <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-4" aria-hidden />
 
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-[19px] font-bold text-white">{title}</h3>
+            <Sparkles className="w-5 h-5 text-indigo-400" aria-hidden />
+            <h3 id={titleId} className="text-[19px] font-bold text-white">
+              {title}
+            </h3>
           </div>
           <button
+            ref={closeRef}
+            type="button"
             onClick={onClose}
             aria-label="Close"
-            className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors"
+            className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -53,17 +71,18 @@ export const InfoModal: React.FC<InfoModalProps> = ({
         <p className="text-[14px] text-slate-300 leading-relaxed mb-4">{description}</p>
 
         {keyPoints && keyPoints.length > 0 && (
-          <div className="space-y-2 mb-5 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-            {keyPoints.map((pt, idx) => (
-              <div key={idx} className="flex items-center gap-2.5 text-[13px] text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <ul className="space-y-2 mb-5 bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
+            {keyPoints.map((pt) => (
+              <li key={pt} className="flex items-center gap-2.5 text-[13px] text-slate-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden />
                 <span>{pt}</span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
         <button
+          type="button"
           onClick={() => {
             onAction?.();
             onClose();

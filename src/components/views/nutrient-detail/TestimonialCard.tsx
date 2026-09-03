@@ -13,7 +13,7 @@ export const TestimonialCard: React.FC<{ testimonial: Nutrient['testimonial'] }>
       </div>
       <div>
         <div className="text-[12px] font-bold text-white">{testimonial.author}</div>
-        <div className="text-[10px] text-slate-400">{testimonial.role}</div>
+        <div className="text-[10px] text-slate-500">{testimonial.role}</div>
       </div>
     </div>
   </section>

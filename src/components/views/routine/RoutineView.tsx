@@ -12,7 +12,8 @@ import { AddItemForm } from './AddItemForm';
 interface RoutineViewProps {
   routineItems: RoutineItem[];
   onToggleItem: (itemId: string) => void;
-  onAddItem: (item: RoutineItem) => void;
+  /** Returns false when a same-named item already exists. */
+  onAddItem: (item: RoutineItem) => boolean;
   onRemoveItem: (itemId: string) => void;
   onResetToDefaults: () => void;
 }
@@ -55,8 +56,10 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         title="Today's Routine"
         right={
           <button
+            type="button"
+            aria-expanded={isAdding}
             onClick={() => setIsAdding((v) => !v)}
-            className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 shadow-xs transition-transform active:scale-95"
+            className="w-11 h-11 rounded-lg bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 shadow-xs transition-transform active:scale-95"
             aria-label="Add habit"
           >
             <Plus className="w-5 h-5" />
@@ -69,7 +72,10 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
       {isAdding && (
         <AddItemForm
           onSubmit={(item) => {
-            onAddItem(item);
+            if (!onAddItem(item)) {
+              setToast(`${item.name} is already in your routine`);
+              return;
+            }
             setIsAdding(false);
             setToast(`${item.name} added to your routine`);
           }}
@@ -81,9 +87,9 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
       <section className="space-y-2 mb-5 flex-1">
         {routineItems.length === 0 ? (
           <div className="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-500 space-y-2.5">
-            <Calendar className="w-9 h-9 mx-auto text-slate-300" />
+            <Calendar className="w-9 h-9 mx-auto text-slate-500" aria-hidden />
             <p className="text-[13px]">Your routine is currently empty.</p>
-            <button onClick={onResetToDefaults} className="text-[13px] text-indigo-600 font-semibold underline">
+            <button type="button" onClick={onResetToDefaults} className="min-h-11 text-[13px] text-indigo-600 font-semibold underline">
               Restore recommended items
             </button>
           </div>
@@ -92,11 +98,12 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
             <div key={item.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
               <RoutineItemRow item={item} onToggle={onToggleItem} showTiming />
               <button
+                type="button"
                 onClick={() => remove(item)}
-                className="w-7 h-7 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors shrink-0"
-                title="Delete item"
+                aria-label={`Remove ${item.name}`}
+                className="w-10 h-10 -mr-1 rounded-md hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center transition-colors shrink-0"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4" aria-hidden />
               </button>
             </div>
           ))
@@ -105,8 +112,9 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
 
       {routineItems.length > 0 && (
         <button
+          type="button"
           onClick={() => setShowResetConfirm(true)}
-          className="text-[12px] text-slate-500 hover:text-indigo-600 text-center pb-4 transition-colors font-medium"
+          className="min-h-11 text-[12px] text-slate-500 hover:text-indigo-600 text-center pb-4 transition-colors font-medium"
         >
           Reset to recommended student routine
         </button>
@@ -126,7 +134,7 @@ export const RoutineView: React.FC<RoutineViewProps> = ({
         }}
       />
 
-      <Toast message={toast} onUndo={lastRemoved ? undoRemove : undefined} />
+      <Toast message={toast} onUndo={lastRemoved ? undoRemove : undefined} onDismiss={() => setToast(null)} />
     </PageShell>
   );
 };

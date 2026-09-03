@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppScreen, QuizAnswers, RoutineItem, UserProfile } from './types';
 import { INITIAL_USER_PROFILE, INITIAL_ROUTINE_ITEMS, EDUCATIONAL_ARTICLES, FLAGGED_NUTRIENTS } from './data/mockData';
 import { nutrientToRoutineItem, hasRoutineItemNamed } from './lib/routine';
@@ -19,22 +19,82 @@ import { ProfileView } from './components/views/profile/ProfileView';
 /** Screens that show the bottom tab bar. */
 const TAB_SCREENS: AppScreen[] = ['home', 'discover', 'routine', 'profile'];
 
+const STORAGE_KEY = 'nutrilens:v1';
+
+interface Saved {
+  userProfile: UserProfile;
+  routineItems: RoutineItem[];
+}
+
+/** Persisted profile + routine from a previous visit. Missing or corrupt storage falls back to the demo defaults. */
+function loadSaved(): Saved {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Saved;
+  } catch {
+    /* private mode, SSR, or bad JSON: use defaults */
+  }
+  return { userProfile: INITIAL_USER_PROFILE, routineItems: INITIAL_ROUTINE_ITEMS };
+}
+
+const saved = loadSaved();
+
+/** Browser history entry. `depth` lets in-app Back know whether there is anything to go back to. */
+interface NavState {
+  screen: AppScreen;
+  depth: number;
+}
+
+const readNavState = (): NavState | null =>
+  typeof window !== 'undefined' && window.history.state?.screen ? (window.history.state as NavState) : null;
+
 /**
- * Root: owns all app state (current screen, profile, routine, selections) and hands
- * data + callbacks down to one screen at a time. There is no router; `screen` is the route.
+ * Root: owns all app state and hands data + callbacks down to one screen at a time.
+ * `screen` is the route. Navigation is mirrored into the browser history so the browser's
+ * Back button and every in-app back arrow do the same thing (H3 user control, H4 platform consistency).
+ * Profile and routine persist in localStorage so a reload doesn't lose the user's work (H6 recognition over recall).
  */
 export default function App() {
-  const [screen, setScreen] = useState<AppScreen>('home');
-  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_USER_PROFILE);
-  const [routineItems, setRoutineItems] = useState<RoutineItem[]>(INITIAL_ROUTINE_ITEMS);
+  const [screen, setScreen] = useState<AppScreen>(() => readNavState()?.screen ?? 'home');
+  const [userProfile, setUserProfile] = useState<UserProfile>(saved.userProfile);
+  const [routineItems, setRoutineItems] = useState<RoutineItem[]>(saved.routineItems);
   const [activeNutrientId, setActiveNutrientId] = useState('vitamin-d');
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
 
-  // --- Routine: the only place the list is mutated. Adds are de-duplicated by name. ---
+  // --- Browser history integration ---
+  useEffect(() => {
+    if (!readNavState()) window.history.replaceState({ screen: 'home', depth: 0 } satisfies NavState, '');
+    const onPop = (e: PopStateEvent) => setScreen((e.state as NavState | null)?.screen ?? 'home');
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const navigate = (next: AppScreen) => {
+    if (next === screen) return;
+    window.history.pushState({ screen: next, depth: (readNavState()?.depth ?? 0) + 1 } satisfies NavState, '');
+    setScreen(next);
+  };
+
+  /** In-app Back. Uses real browser history; falls back to Home when this is the first page. */
+  const goBack = () => ((readNavState()?.depth ?? 0) > 0 ? window.history.back() : navigate('home'));
+
+  // --- Persistence ---
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ userProfile, routineItems } satisfies Saved));
+    } catch {
+      /* storage unavailable: app still works for this session */
+    }
+  }, [userProfile, routineItems]);
+
+  // --- Routine: the only place the list is mutated. Returns false when a same-named item already exists. ---
   const toggleRoutineItem = (id: string) =>
     setRoutineItems((prev) => prev.map((i) => (i.id === id ? { ...i, completed: !i.completed } : i)));
-  const addRoutineItem = (item: RoutineItem) =>
-    setRoutineItems((prev) => (hasRoutineItemNamed(prev, item.name) ? prev : [...prev, item]));
+  const addRoutineItem = (item: RoutineItem): boolean => {
+    if (hasRoutineItemNamed(routineItems, item.name)) return false;
+    setRoutineItems((prev) => [...prev, item]);
+    return true;
+  };
   const removeRoutineItem = (id: string) => setRoutineItems((prev) => prev.filter((i) => i.id !== id));
   const addAllFlagged = () =>
     setRoutineItems((prev) => [
@@ -43,14 +103,18 @@ export default function App() {
     ]);
   const resetRoutine = () => setRoutineItems(INITIAL_ROUTINE_ITEMS);
 
-  // --- Navigation helpers ---
+  // --- Flows ---
   const completeQuiz = (answers: QuizAnswers) => {
     setUserProfile((p) => ({ ...p, answers, hasCompletedQuiz: true }));
-    setScreen('results-flow');
+    navigate('results-flow');
+  };
+  const continueAsGuest = () => {
+    setUserProfile((p) => ({ ...p, hasCompletedQuiz: false }));
+    navigate('home');
   };
   const openNutrient = (id: string) => {
     setActiveNutrientId(id);
-    setScreen('nutrient-detail');
+    navigate('nutrient-detail');
   };
 
   const activeArticle = EDUCATIONAL_ARTICLES.find((a) => a.id === activeArticleId);
@@ -58,25 +122,19 @@ export default function App() {
   const screens: Record<AppScreen, React.ReactNode> = {
     splash: (
       <SplashView
-        onStartQuiz={() => setScreen('quiz')}
-        onContinueAsGuest={() => setScreen('home')}
-        onOpenHowItWorks={() => setScreen('how-it-works')}
+        onStartQuiz={() => navigate('quiz')}
+        onContinueAsGuest={continueAsGuest}
+        onOpenHowItWorks={() => navigate('how-it-works')}
       />
     ),
-    'how-it-works': <HowThisWorksView onBack={() => setScreen('splash')} onStartQuiz={() => setScreen('quiz')} />,
-    quiz: (
-      <QuizView
-        initialAnswers={userProfile.answers}
-        onBackToSplash={() => setScreen('splash')}
-        onCompleteQuiz={completeQuiz}
-      />
-    ),
+    'how-it-works': <HowThisWorksView onBack={goBack} onStartQuiz={() => navigate('quiz')} />,
+    quiz: <QuizView initialAnswers={userProfile.answers} onBack={goBack} onCompleteQuiz={completeQuiz} />,
     'results-flow': (
       <ResultsFlowView
         routineItems={routineItems}
         onAddRoutineItem={addRoutineItem}
         onRemoveRoutineItem={removeRoutineItem}
-        onFinishFlow={() => setScreen('home')}
+        onFinishFlow={() => navigate('home')}
         onOpenNutrientDetail={openNutrient}
       />
     ),
@@ -84,28 +142,31 @@ export default function App() {
       <ResultsListView
         routineItems={routineItems}
         onAddRoutineItem={addRoutineItem}
+        onRemoveRoutineItem={removeRoutineItem}
         onAddAllToRoutine={addAllFlagged}
         onOpenNutrientDetail={openNutrient}
-        onGoToHome={() => setScreen('home')}
+        onGoToHome={() => navigate('home')}
       />
     ),
     home: (
       <HomeView
         userName={userProfile.name}
+        hasCompletedQuiz={userProfile.hasCompletedQuiz}
         routineItems={routineItems}
         onToggleRoutineItem={toggleRoutineItem}
-        onOpenAssessment={() => setScreen('results-flow')}
+        onOpenAssessment={() => navigate('results-flow')}
+        onStartQuiz={() => navigate('quiz')}
         onOpenNutrientDetail={openNutrient}
         onOpenArticle={setActiveArticleId}
-        onOpenProfile={() => setScreen('profile')}
+        onOpenProfile={() => navigate('profile')}
       />
     ),
     'nutrient-detail': (
       <NutrientDetailView
         nutrientId={activeNutrientId}
         isAlreadyAdded={routineItems.some((r) => r.nutrientId === activeNutrientId)}
-        onBack={() => setScreen('home')}
-        onWhyWeThinkSo={() => setScreen('results-flow')}
+        onBack={goBack}
+        onWhyWeThinkSo={() => navigate('results-flow')}
         onAddRoutineItem={addRoutineItem}
         onRemoveRoutineItem={removeRoutineItem}
       />
@@ -120,16 +181,22 @@ export default function App() {
         onResetToDefaults={resetRoutine}
       />
     ),
-    profile: <ProfileView userProfile={userProfile} onRetakeQuiz={() => setScreen('quiz')} />
+    profile: (
+      <ProfileView
+        userProfile={userProfile}
+        onRetakeQuiz={() => navigate('quiz')}
+        onOpenHowItWorks={() => navigate('how-it-works')}
+      />
+    )
   };
 
   return (
     <div className="w-full min-h-screen bg-[#F1F5F9] text-slate-900 font-sans antialiased flex flex-col items-center">
-      <DemoSwitcher current={screen} onSelect={setScreen} />
+      {import.meta.env?.DEV && <DemoSwitcher current={screen} onSelect={navigate} />}
 
-      <div className="w-full flex-1 flex flex-col items-center">{screens[screen]}</div>
+      <div className="w-full flex-1 flex flex-col items-center">{screens[screen] ?? screens.home}</div>
 
-      {TAB_SCREENS.includes(screen) && <BottomNav currentScreen={screen} onNavigate={setScreen} />}
+      {TAB_SCREENS.includes(screen) && <BottomNav currentScreen={screen} onNavigate={navigate} />}
 
       {activeArticle && (
         <InfoModal

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, ArrowRight } from 'lucide-react';
 import { FoodSource, Nutrient } from '../../../types';
 import { BackHeader } from '../../common/BackHeader';
 import { Button } from '../../common/Button';
@@ -58,8 +58,10 @@ export const HowToGetPage: React.FC<HowToGetPageProps> = ({ nutrient, isLast, is
                   </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => onAdd(source)}
-                    className="border border-white/80 hover:bg-white/10 active:scale-95 text-white rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-all shrink-0"
+                    aria-label={`Add ${source.name} to routine`}
+                    className="min-h-10 border border-white/80 hover:bg-white/10 active:scale-95 text-white rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-all shrink-0"
                   >
                     + Add
                   </button>
@@ -72,11 +74,14 @@ export const HowToGetPage: React.FC<HowToGetPageProps> = ({ nutrient, isLast, is
         {/* Supplement accordion */}
         <div className="bg-white/[0.10] rounded-[16px] overflow-hidden transition-all">
           <button
+            type="button"
+            aria-expanded={suppExpanded}
             onClick={() => setSuppExpanded((v) => !v)}
             className="w-full h-12 px-4 flex items-center justify-between text-left text-[14px] font-medium text-white/90 hover:bg-white/[0.05] transition-colors"
           >
             <span>{nutrient.supplement.title}</span>
             <ChevronDown
+              aria-hidden
               className={`w-4 h-4 text-white/70 transition-transform duration-200 ${suppExpanded ? 'rotate-180' : ''}`}
             />
           </button>
@@ -92,7 +97,8 @@ export const HowToGetPage: React.FC<HowToGetPageProps> = ({ nutrient, isLast, is
 
       <div className="pt-6">
         <Button variant="inverse" onClick={onNext}>
-          {isLast ? 'Finish' : 'Next nutrient →'}
+          <span>{isLast ? 'Finish' : 'Next nutrient'}</span>
+          <ArrowRight className="w-5 h-5" aria-hidden />
         </Button>
       </div>
     </>

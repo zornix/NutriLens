@@ -15,7 +15,8 @@ type FlowStep = 'overview' | 'why' | 'how-to-get' | 'finish';
 
 interface ResultsFlowViewProps {
   routineItems: RoutineItem[];
-  onAddRoutineItem: (item: RoutineItem) => void;
+  /** Returns false when a same-named item already exists. */
+  onAddRoutineItem: (item: RoutineItem) => boolean;
   onRemoveRoutineItem: (itemId: string) => void;
   onFinishFlow: () => void;
   onOpenNutrientDetail?: (nutrientId: string) => void;
@@ -55,7 +56,11 @@ export const ResultsFlowView: React.FC<ResultsFlowViewProps> = ({
       completed: false,
       nutrientId: nutrient.id
     };
-    onAddRoutineItem(item);
+    if (!onAddRoutineItem(item)) {
+      setLastChange(null);
+      setToast(`${source.name} is already in your routine`);
+      return;
+    }
     setLastChange({ item, action: 'add' });
     setToast(`${source.name} added to your routine`);
   };
@@ -120,7 +125,7 @@ export const ResultsFlowView: React.FC<ResultsFlowViewProps> = ({
         )}
       </AnimatePresence>
 
-      <Toast message={toast} onUndo={lastChange ? undo : undefined} inverse />
+      <Toast message={toast} onUndo={lastChange ? undo : undefined} onDismiss={() => setToast(null)} inverse />
     </PageShell>
   );
 };

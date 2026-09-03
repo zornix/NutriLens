@@ -19,10 +19,12 @@ npm run build
 src/
 ├── main.tsx                    React entry; mounts <App/>
 ├── index.css                   Tailwind import, Inter font, .no-scrollbar, .mascot-float
-├── App.tsx                     All app state + screen switch (see "How it works")
+├── App.tsx                     All app state, browser-history navigation, persistence, screen switch
+├── vite-env.d.ts               Types for import.meta.env
 ├── types/index.ts              Domain types: AppScreen, Nutrient, RoutineItem, QuizQuestion, ...
 ├── data/mockData.ts            All content: quiz questions, nutrients, articles, default routine, demo profile
 ├── lib/routine.ts              nutrientToRoutineItem(), hasRoutineItemNamed()
+├── lib/useEscapeKey.ts         Escape-to-close hook for dialogs
 └── components/
     ├── common/                 Shared building blocks used by 2+ screens
     │   ├── PageShell.tsx       393px phone column, light or dark
@@ -60,9 +62,20 @@ Screens are pure functions of props. They receive data and callbacks, never impo
 Tab screens (`home`, `discover`, `routine`, `profile`) also render `BottomNav`. Adding a screen means adding a union member in
 `types/index.ts`, a folder under `views/`, and one entry in the record. TypeScript fails until all three exist.
 
-**Routine list.** Every add goes through `App.addRoutineItem`, which drops duplicates by name (case-insensitive).
+`App.navigate()` pushes a `{ screen, depth }` entry onto `window.history`, and a `popstate` listener sets `screen` from it.
+So the browser's Back button, every in-app back arrow (`App.goBack()`) and a page reload all agree on where you are.
+`goBack()` falls back to Home when there is nothing behind the current page.
+
+**Persistence.** `userProfile` and `routineItems` are saved to `localStorage` under `nutrilens:v1` on every change and read
+back on load. Corrupt or unavailable storage silently falls back to the demo defaults. Clear the key to reset the demo.
+
+**Routine list.** Every add goes through `App.addRoutineItem`, which refuses duplicates by name (case-insensitive) and
+returns `false` so the calling screen can say "already in your routine" instead of a misleading "added".
 Nutrient "Add to routine" buttons on every screen build their item with `lib/routine.nutrientToRoutineItem`, so the id,
 category and detail line are defined once. Screens keep a local `lastChange` so `Toast` can offer a single-level Undo.
+
+**Assessment gating.** Results banners and the results screens only make sense after the quiz. `userProfile.hasCompletedQuiz`
+drives Home and Profile: guests ("Continue as guest") see a prompt to take the quiz instead of fabricated findings.
 
 **Assessment.** `QuizView` collects `QuizAnswers` (question id -> option id or ids). On completion `App` stores them on the
 profile and opens the results flow. The "which nutrients are flagged" logic is not computed from answers yet:
@@ -93,9 +106,9 @@ Elements are stateless unless noted.
 | Element | What it is |
 |---|---|
 | `QuizView` | Owns `step` and `answers`. Renders one question from `QUIZ_QUESTIONS`, picks the choice component by `question.type`, sticky footer CTA. Accepts `initialAnswers` so retaking shows previous picks. |
-| `QuizProgress` | Sticky header: back arrow + one pill per question (built on `BackHeader`). |
-| `SingleChoiceList` | Vertical radio list with label, detail and round check. |
-| `MultiChoiceGrid` | Two-column checkbox grid with `FoodIcon`s, optional "I'm not sure" row (stores `NOT_SURE`), optional insight callout. |
+| `QuizProgress` | Sticky header: back arrow, one pill per question and a "2/5" counter; exposed as a labelled progressbar. |
+| `SingleChoiceList` | Vertical radio list (real `radiogroup` / `radio` roles) with label, detail and round check. |
+| `MultiChoiceGrid` | Two-column toggle grid (`aria-pressed`) with `FoodIcon`s, optional "I'm not sure" row (stores `NOT_SURE`), optional insight callout. |
 
 ### Results Flow (`views/results-flow/`) — dark, story-style
 | Element | What it is |
@@ -111,12 +124,12 @@ Elements are stateless unless noted.
 | Element | What it is |
 |---|---|
 | `ResultsListView` | Brand header, headline, mascot summary card, one `NutrientResultCard` per flagged nutrient, "Add all" CTA, Go home, footer, Toast. |
-| `NutrientResultCard` | Symbol tile, name + status tag, reason line, first three food sources as chips, Add / Added. Card opens detail; chip row stops propagation. |
+| `NutrientResultCard` | Header button (symbol, name, status tag, reason) opens detail; separate chip row with the first three food sources and Add / Added. No nested buttons. |
 
 ### Home (`views/home/`)
 | Element | What it is |
 |---|---|
-| `HomeView` | Greeting header with avatar (`ScreenHeader`), mascot hero, gap banner, then the three elements below and a "Check my nutrition" CTA. |
+| `HomeView` | Greeting header with avatar (`ScreenHeader`), mascot hero, results banner (or "No assessment yet" prompt for guests), then the three elements below and one quiz CTA ("Check my nutrition" / "Retake the quiz"). |
 | `NutrientCarousel` | Horizontal scroll of image cards, one per nutrient. |
 | `TodayRoutineCard` | "n of m completed" badge + checklist of `RoutineItemRow`s. |
 | `LearnMoreGrid` | Two-column grid of compact article tiles. |
@@ -133,7 +146,7 @@ Elements are stateless unless noted.
 ### Discover (`views/discover/`)
 | Element | What it is |
 |---|---|
-| `DiscoverView` | `ScreenHeader`, search input (filters articles by title or tag), `NutrientGuideGrid`, article list. |
+| `DiscoverView` | `ScreenHeader`, labelled search input (filters articles by title or tag), `NutrientGuideGrid`, article list with a "no matches, clear search" empty state. |
 | `NutrientGuideGrid` | Three-column symbol tiles linking to each nutrient. |
 | `ArticleCard` | List row: type tag, read time, title, two-line summary. |
 
@@ -147,7 +160,7 @@ Elements are stateless unless noted.
 ### Profile (`views/profile/`)
 | Element | What it is |
 |---|---|
-| `ProfileView` | User card, mascot status card, quick actions (retake quiz, privacy), disclaimer footer. Single file, read-only. |
+| `ProfileView` | User card, mascot status card, quick actions (take / retake quiz, How NutriLens Works, privacy), disclaimer footer. Single file. |
 
 ## Shared elements (`components/common`, `components/modals`)
 
@@ -158,13 +171,13 @@ Elements are stateless unless noted.
 | `BackHeader` | Drill-in screen title / progress | `onBack`, children (center), `right`, `dark`, `className` |
 | `Button` | Any full-width CTA | `variant`: `primary` (indigo), `secondary` (white outline), `inverse` (white on navy); native button props |
 | `FoodIcon` | Rendering a food/habit from data | `name` (icon key from `mockData`), `dark`, `className` for size |
-| `RoutineItemRow` | Showing a checkable routine item | `item`, `onToggle`, `showTiming` |
-| `Toast` | Confirming an action | `message` (null hides), `onUndo`, `inverse` |
+| `RoutineItemRow` | Showing a checkable routine item | `item`, `onToggle`, `showTiming`. A real `<input type="checkbox">` inside a label |
+| `Toast` | Confirming an action | `message` (null hides), `onUndo`, `onDismiss` (called after `duration`, default 5s), `inverse` |
 | `InfoModal` | Reading an article / explanation | `title`, `description`, `keyPoints`, `actionText`, `onClose`, `onAction` |
 | `ConfirmDialog` | Guarding a destructive action | `title`, `body`, `confirmText`, `cancelText`, `onConfirm`, `onCancel` |
 | `BottomNav` | Tab screens only (rendered by App) | `currentScreen`, `onNavigate` |
 | `VitoMascot` | Mascot anywhere | `size`: `sm` `md` `lg` `hero`, `animate` |
-| `DemoSwitcher` | Development only | `current`, `onSelect` — remove from `App.tsx` for production |
+| `DemoSwitcher` | Development only | `current`, `onSelect`. Rendered only when `import.meta.env.DEV` is true |
 
 ## Data model (`types/index.ts`)
 
@@ -194,6 +207,33 @@ Progress pills and step counts derive from the array length.
 
 **Compute results from answers.** Replace the static `FLAGGED_NUTRIENTS` with a function over `userProfile.answers`
 and pass the result down from `App`. Nothing else needs to change.
+
+## HCI improvements (branch `feat/hci-improvements`)
+
+Changes mapped to Nielsen's heuristics (H1–H10) and WCAG 2.1 AA. Each row names where to look.
+
+| Principle | Change | Where |
+|---|---|---|
+| H1 Visibility of system status | Toasts are a live region and auto-dismiss; quiz shows "2/5" next to the pills; Home and Profile say "No assessment yet" for guests | `Toast`, `QuizProgress`, `HomeView`, `ProfileView` |
+| H1 / H5 Honest feedback | Adding a duplicate now says "already in your routine" instead of "added" | `App.addRoutineItem` returns `false`; all four add sites |
+| H2 Match the real world | Guests no longer see fabricated findings; results appear only after the quiz | `App.continueAsGuest`, `HomeView` |
+| H3 User control and freedom | Browser Back and every in-app back arrow share one history; Undo on every add/remove including the summary list; dialogs close with Escape or backdrop tap | `App.navigate` / `goBack`, `ResultsListView`, `InfoModal`, `ConfirmDialog` |
+| H4 Consistency and standards | All "→" text arrows became the same `ArrowRight` icon used elsewhere; every clickable card is a real `<button>`; active tab has `aria-current="page"` | results flow pages, `NutrientCarousel`, `LearnMoreGrid`, `ArticleCard`, `OverviewPage`, `BottomNav` |
+| H5 Error prevention | Reset still confirms; Cancel is the focused (default) button in the dialog | `ConfirmDialog` |
+| H6 Recognition over recall | Profile and routine persist across reloads; retaking the quiz pre-fills previous answers | `App` (localStorage), `QuizView` |
+| H8 Minimalist design | Demo switcher hidden in production builds; Home has one quiz CTA instead of two buttons doing the same thing | `App`, `HomeView` |
+| H9 Recover from errors | Empty search result explains itself and offers "Clear search" | `DiscoverView` |
+| H10 Help and documentation | "How NutriLens Works" reachable from Profile, not just Splash | `ProfileView` |
+| WCAG 1.4.3 Contrast | 12px slate-400 text (2.8:1) raised to slate-500 (4.6:1); white/60 on navy raised to white/70 | all views |
+| WCAG 1.4.4 Resize text | Removed `maximum-scale=1, user-scalable=no` from the viewport meta so pinch-zoom works | `index.html` |
+| WCAG 2.1.1 Keyboard | Cards, routine checkboxes and flow cards are native buttons / checkboxes, so Tab + Enter/Space work everywhere | see H4 row, `RoutineItemRow` |
+| WCAG 2.4.7 Focus visible | One global `:focus-visible` outline; hidden checkbox shows a ring on its visual box | `index.css`, `RoutineItemRow` |
+| WCAG 2.5.5 Target size | Delete, Add, Remove, avatar, notifications, "+" and dialog buttons are 40–44px tall | `RoutineView`, `HowToGetPage`, `FinishPage`, `HomeView`, `ResultsListView`, `AddItemForm` |
+| WCAG 2.3.3 Motion | `prefers-reduced-motion` disables the mascot float and turns the flow slide into a fade | `index.css`, `FlowPage` |
+| WCAG 4.1.2 Name, role, value | Dialogs have `role`, `aria-modal`, `aria-labelledby`; accordions have `aria-expanded`; icon-only buttons have labels; decorative icons are `aria-hidden`; inputs have labels | modals, `ClinicalDetails`, `HowToGetPage`, `RoutineView`, `AddItemForm`, `DiscoverView` |
+
+Not done, on purpose: no focus trap or focus restore in dialogs (Escape + backdrop close cover the common case), no skip
+link (single-column phone layout), no keyboard shortcuts.
 
 ## Notes from the restructuring
 

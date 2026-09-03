@@ -28,3 +28,22 @@
   animation: gentle-float 4s ease-in-out infinite;
 }
 
+
+/* Keyboard focus is always visible; pointer clicks don't trigger it (:focus-visible). */
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Respect the OS "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  .mascot-float {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

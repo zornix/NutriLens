@@ -12,7 +12,8 @@ import { MultiChoiceGrid, NOT_SURE } from './MultiChoiceGrid';
 interface QuizViewProps {
   /** Pre-filled answers (e.g. from the saved profile when retaking). */
   initialAnswers?: QuizAnswers;
-  onBackToSplash: () => void;
+  /** Back from the first question. Wired to browser history in App. */
+  onBack: () => void;
   onCompleteQuiz: (answers: QuizAnswers) => void;
 }
 
@@ -20,7 +21,7 @@ interface QuizViewProps {
  * Assessment wizard. Owns step index and answers; renders one question at a time.
  * Elements: QuizProgress (header), badge + heading, SingleChoiceList | MultiChoiceGrid, sticky footer CTA.
  */
-export const QuizView: React.FC<QuizViewProps> = ({ initialAnswers = {}, onBackToSplash, onCompleteQuiz }) => {
+export const QuizView: React.FC<QuizViewProps> = ({ initialAnswers = {}, onBack, onCompleteQuiz }) => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>(initialAnswers);
 
@@ -40,7 +41,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialAnswers = {}, onBackT
   };
 
   const next = () => (isLast ? onCompleteQuiz(answers) : setStep((s) => s + 1));
-  const back = () => (step > 0 ? setStep((s) => s - 1) : onBackToSplash());
+  const back = () => (step > 0 ? setStep((s) => s - 1) : onBack());
 
   const ctaLabel =
     question.type === 'multi' && selectedCount > 0
@@ -86,7 +87,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialAnswers = {}, onBackT
       <footer className="fixed bottom-0 max-w-[393px] w-full px-5 pb-8 pt-3 bg-gradient-to-t from-slate-50 via-slate-50/95 to-transparent z-40">
         <Button disabled={selectedCount === 0} onClick={next}>
           <span>{ctaLabel}</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4" aria-hidden />
         </Button>
       </footer>
     </PageShell>

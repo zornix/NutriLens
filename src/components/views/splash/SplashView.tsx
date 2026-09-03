@@ -45,7 +45,7 @@ export const SplashView: React.FC<SplashViewProps> = ({ onStartQuiz, onContinueA
       <Button variant="secondary" onClick={onContinueAsGuest}>
         Continue as guest
       </Button>
-      <div className="flex items-center gap-2 text-[12px] text-slate-400 pt-2">
+      <div className="flex items-center gap-2 text-[12px] text-slate-500 pt-2">
         <span>Not medical advice</span>
         <span>·</span>
         <button onClick={onOpenHowItWorks} className="hover:text-slate-800 underline underline-offset-2 transition-colors">

@@ -18,9 +18,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /** Full-width action button. All screen-level CTAs go through this so sizing stays consistent. */
-export const Button: React.FC<ButtonProps> = ({ variant = 'primary', className = '', children, ...rest }) => (
+export const Button: React.FC<ButtonProps> = ({ variant = 'primary', type = 'button', className = '', children, ...rest }) => (
   <button
-    className={`w-full flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:pointer-events-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none ${VARIANTS[variant]} ${className}`}
+    type={type}
+    className={`w-full flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:pointer-events-none disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none ${VARIANTS[variant]} ${className}`}
     {...rest}
   >
     {children}

@@ -21,6 +21,8 @@ export const ClinicalDetails: React.FC<{ nutrient: Nutrient }> = ({ nutrient }) 
   return (
     <div className="pt-2 border-t border-slate-200/80">
       <button
+        type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
         className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between text-left transition-colors"
       >
@@ -76,12 +78,17 @@ export const ClinicalDetails: React.FC<{ nutrient: Nutrient }> = ({ nutrient }) 
 
           {/* Citations */}
           <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-            <button onClick={() => setSourcesOpen((v) => !v)} className="w-full flex items-center justify-between text-left">
+            <button
+              type="button"
+              aria-expanded={sourcesOpen}
+              onClick={() => setSourcesOpen((v) => !v)}
+              className="w-full min-h-11 flex items-center justify-between text-left"
+            >
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-indigo-600" />
                 <span className="text-[13px] text-slate-800 font-bold">Scientific Citations</span>
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${sourcesOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${sourcesOpen ? 'rotate-180' : ''}`} />
             </button>
             {sourcesOpen && (
               <div className="mt-2 pl-2 border-l-2 border-indigo-500 space-y-1 text-[11px] text-slate-500 pt-1">

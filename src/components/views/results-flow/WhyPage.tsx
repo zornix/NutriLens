@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Nutrient } from '../../../types';
 import { BackHeader } from '../../common/BackHeader';
 import { Button } from '../../common/Button';
@@ -54,6 +55,7 @@ export const WhyPage: React.FC<WhyPageProps> = ({ nutrient, index, total, onBack
 
       {onLearnMore && (
         <button
+          type="button"
           onClick={onLearnMore}
           className="text-[15px] text-white font-medium underline underline-offset-4 hover:text-white/80 transition-colors inline-block"
         >
@@ -64,7 +66,8 @@ export const WhyPage: React.FC<WhyPageProps> = ({ nutrient, index, total, onBack
 
     <div className="pt-6">
       <Button variant="inverse" onClick={onNext}>
-        How do I get more? →
+        <span>How do I get more?</span>
+        <ArrowRight className="w-5 h-5" aria-hidden />
       </Button>
     </div>
   </>

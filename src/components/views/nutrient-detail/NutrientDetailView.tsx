@@ -15,7 +15,8 @@ interface NutrientDetailViewProps {
   isAlreadyAdded: boolean;
   onBack: () => void;
   onWhyWeThinkSo: () => void;
-  onAddRoutineItem: (item: RoutineItem) => void;
+  /** Returns false when a same-named item already exists. */
+  onAddRoutineItem: (item: RoutineItem) => boolean;
   onRemoveRoutineItem: (itemId: string) => void;
 }
 
@@ -40,7 +41,11 @@ export const NutrientDetailView: React.FC<NutrientDetailViewProps> = ({
 
   const add = () => {
     const item = nutrientToRoutineItem(nutrient);
-    onAddRoutineItem(item);
+    if (!onAddRoutineItem(item)) {
+      setLastAddedId(null);
+      setToast(`${nutrient.name} is already in your routine`);
+      return;
+    }
     setLastAddedId(item.id);
     setToast(`${nutrient.name} added to your routine`);
   };
@@ -59,9 +64,11 @@ export const NutrientDetailView: React.FC<NutrientDetailViewProps> = ({
         className="px-4 py-3 bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80"
         right={
           <button
+            type="button"
             onClick={() => setIsFavorited((v) => !v)}
             className="w-10 h-10 -mr-2 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-700 transition-colors"
-            aria-label="Favorite"
+            aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={isFavorited}
           >
             <Heart className={`w-5 h-5 ${isFavorited ? 'fill-rose-500 text-rose-500' : 'text-slate-600'}`} />
           </button>
@@ -78,8 +85,9 @@ export const NutrientDetailView: React.FC<NutrientDetailViewProps> = ({
             <div>
               <p className="text-[13px] text-slate-900 font-bold">You may be low in this</p>
               <button
+                type="button"
                 onClick={onWhyWeThinkSo}
-                className="text-[12px] text-indigo-600 hover:text-indigo-700 font-semibold underline mt-0.5 inline-block active:opacity-75"
+                className="min-h-9 text-[12px] text-indigo-600 hover:text-indigo-700 font-semibold underline mt-0.5 inline-block active:opacity-75"
               >
                 Why we think so →
               </button>
@@ -117,7 +125,7 @@ export const NutrientDetailView: React.FC<NutrientDetailViewProps> = ({
       </main>
 
       <AddToRoutineBar isAdded={isAlreadyAdded} onAdd={add} />
-      <Toast message={toast} onUndo={lastAddedId ? undo : undefined} />
+      <Toast message={toast} onUndo={lastAddedId ? undo : undefined} onDismiss={() => setToast(null)} />
     </PageShell>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, RefreshCw } from 'lucide-react';
+import { ShieldCheck, RefreshCw, BookOpen } from 'lucide-react';
 import { UserProfile } from '../../../types';
 import { PageShell } from '../../common/PageShell';
 import { ScreenHeader } from '../../common/ScreenHeader';
@@ -8,10 +8,14 @@ import { VitoMascot } from '../../common/VitoMascot';
 interface ProfileViewProps {
   userProfile: UserProfile;
   onRetakeQuiz: () => void;
+  onOpenHowItWorks: () => void;
 }
 
-/** Profile tab: user card, mascot status card, quick-actions list, disclaimer footer. Read-only for now. */
-export const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, onRetakeQuiz }) => (
+/**
+ * Profile tab: user card, mascot status card, quick-actions list, disclaimer footer.
+ * The methodology page is one tap away from here (H10 help and documentation).
+ */
+export const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, onRetakeQuiz, onOpenHowItWorks }) => (
   <PageShell className="px-5 pt-4 pb-28">
     <ScreenHeader eyebrow="Student Account" title="Profile" />
 
@@ -34,13 +38,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, onRetakeQ
       <VitoMascot size="sm" animate={false} />
       <div className="flex-1 min-w-0">
         <h3 className="text-[13px] font-bold text-slate-900">NutriLens Baseline Active</h3>
-        <p className="text-[12px] text-slate-600 mt-0.5">Assessing Vitamin D, B12, and C for academic stamina.</p>
+        <p className="text-[12px] text-slate-600 mt-0.5">
+          {userProfile.hasCompletedQuiz
+            ? 'Assessing Vitamin D, B12, and C for academic stamina.'
+            : 'No assessment yet. Take the quiz to get your baseline.'}
+        </p>
       </div>
     </section>
 
     {/* Quick actions */}
     <section className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden divide-y divide-slate-100 mb-5">
       <button
+        type="button"
         onClick={onRetakeQuiz}
         className="w-full p-3.5 flex items-center justify-between hover:bg-slate-50 text-left transition-colors"
       >
@@ -49,11 +58,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, onRetakeQ
             <RefreshCw className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-[13px] font-bold text-slate-900 block">Retake Nutrition Assessment</span>
+            <span className="text-[13px] font-bold text-slate-900 block">
+              {userProfile.hasCompletedQuiz ? 'Retake Nutrition Assessment' : 'Take Nutrition Assessment'}
+            </span>
             <span className="text-[11px] text-slate-500 block">Re-evaluate dining and sunlight habits</span>
           </div>
         </div>
         <span className="text-[12px] font-semibold text-indigo-600">Start →</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={onOpenHowItWorks}
+        className="w-full p-3.5 flex items-center justify-between hover:bg-slate-50 text-left transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center border border-slate-200/60">
+            <BookOpen className="w-4 h-4" aria-hidden />
+          </div>
+          <div>
+            <span className="text-[13px] font-bold text-slate-900 block">How NutriLens Works</span>
+            <span className="text-[11px] text-slate-500 block">Rule-based inference, not a diagnosis</span>
+          </div>
+        </div>
+        <span className="text-[12px] font-semibold text-indigo-600">Read →</span>
       </button>
 
       <div className="p-3.5 flex items-center gap-3">
@@ -67,7 +95,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, onRetakeQ
       </div>
     </section>
 
-    <footer className="mt-auto text-center pb-4 text-[11px] text-slate-400 space-y-1">
+    <footer className="mt-auto text-center pb-4 text-[12px] text-slate-500 space-y-1">
       <p className="font-semibold text-slate-700">Not Medical Advice</p>
       <p>
         NutriLens is an educational estimate for campus lifestyle guidance. Consult a medical practitioner or campus Student

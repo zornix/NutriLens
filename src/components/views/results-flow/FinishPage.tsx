@@ -25,8 +25,10 @@ export const FinishPage: React.FC<FinishPageProps> = ({ routineItems, onRemove, 
               <span className="text-[13px] text-white/75 block truncate">{item.detail}</span>
             </div>
             <button
+              type="button"
               onClick={() => onRemove(item)}
-              className="text-[13px] text-white/70 hover:text-white underline underline-offset-2 shrink-0 transition-colors"
+              aria-label={`Remove ${item.name} from routine`}
+              className="min-h-10 px-1 text-[13px] text-white/75 hover:text-white underline underline-offset-2 shrink-0 transition-colors"
             >
               Remove
             </button>

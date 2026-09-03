@@ -8,15 +8,17 @@ interface SingleChoiceListProps {
   onSelect: (optionId: string) => void;
 }
 
-/** Vertical radio-style list: label + detail line + round check indicator. */
+/** Vertical radio list: label + detail line + round check indicator. Exposed as a real radio group to assistive tech. */
 export const SingleChoiceList: React.FC<SingleChoiceListProps> = ({ options, selectedId, onSelect }) => (
-  <div className="flex flex-col gap-2.5 mb-4">
+  <div className="flex flex-col gap-2.5 mb-4" role="radiogroup">
     {options.map((opt) => {
       const isSelected = selectedId === opt.id;
       return (
         <button
           key={opt.id}
           type="button"
+          role="radio"
+          aria-checked={isSelected}
           onClick={() => onSelect(opt.id)}
           className={`flex items-center justify-between p-3.5 rounded-xl text-left transition-all duration-150 active:scale-[0.98] ${
             isSelected
@@ -35,7 +37,7 @@ export const SingleChoiceList: React.FC<SingleChoiceListProps> = ({ options, sel
               isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
             }`}
           >
-            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+            {isSelected && <Check className="w-3 h-3 stroke-[3]" aria-hidden />}
           </div>
         </button>
       );
